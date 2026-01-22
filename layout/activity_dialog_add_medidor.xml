@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+<!--        tools:context=".DialogAddMedidor"-->
+
+        <EditText
+            android:id="@+id/nro_medidor"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="nro medidor"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp"/>
+<!--            android:background="@drawable/edit_text_background"-->
+
+        <EditText
+            android:id="@+id/ubicacion"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="ubicacion"
+            android:padding="10dp"
+            android:layout_marginBottom="10dp"/>
+<!--            android:background="@drawable/edit_text_background"-->
+
+        <EditText
+            android:id="@+id/fecha_inicio"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:hint="fecha de inicio"
+            android:padding="10dp"
+            android:layout_marginBottom="20dp"/>
+<!--            android:background="@drawable/edit_text_background"-->
+
+    <EditText
+        android:id="@+id/et_lectura_inicial"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="lectura inicial"
+        android:padding="10dp"
+        android:layout_marginBottom="20dp"/>
+        <Button
+            android:id="@+id/btnAceptarDialog"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Aceptar"
+            android:textColor="#FFFFFF"/>
+<!--            android:background="@drawable/button_background"-->
+
+    </LinearLayout>
+

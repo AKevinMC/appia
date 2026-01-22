@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:background="#FAFAFA">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Configurar Precios"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:textColor="#009688"
+        android:layout_marginBottom="24dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pago Mínimo Mensual (Bs)"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/et_cargo_fijo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: 10"
+        android:inputType="numberDecimal"
+        android:background="@android:drawable/edit_text"
+        android:minHeight="48dp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Límite Base (m³)"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/et_limite_basico"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: 6"
+        android:inputType="number"
+        android:background="@android:drawable/edit_text"
+        android:minHeight="48dp"
+        android:layout_marginBottom="16dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Costo por m³ Extra (Bs)"
+        android:textStyle="bold"/>
+
+    <EditText
+        android:id="@+id/et_costo_extra"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="Ej: 4"
+        android:inputType="numberDecimal"
+        android:background="@android:drawable/edit_text"
+        android:minHeight="48dp"
+        android:layout_marginBottom="24dp"/>
+
+    <Button
+        android:id="@+id/btn_guardar_tarifa"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Guardar Configuración"
+        android:backgroundTint="#009688"/>
+
+</LinearLayout>

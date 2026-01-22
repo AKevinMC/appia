@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="24dp"
+    android:gravity="center"
+    android:background="#F5F5F5">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Reporte Mensual"
+        android:textSize="28sp"
+        android:textStyle="bold"
+        android:textColor="#388E3C"
+        android:layout_marginBottom="40dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Seleccione Gestión:"
+        android:textStyle="bold"/>
+
+    <Spinner
+        android:id="@+id/sp_reporte_anio"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="20dp"/>
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Seleccione Mes:"
+        android:textStyle="bold"/>
+
+    <Spinner
+        android:id="@+id/sp_reporte_mes"
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_marginBottom="40dp"/>
+
+    <ProgressBar
+        android:id="@+id/progress_reporte"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone"
+        android:layout_marginBottom="20dp"/>
+
+    <Button
+        android:id="@+id/btn_generar_excel"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Descargar Planilla"
+        android:textSize="18sp"
+        android:backgroundTint="#388E3C"/>
+</LinearLayout>

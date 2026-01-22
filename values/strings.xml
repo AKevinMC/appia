@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">APMojocoya</string>
+    <string name="default_web_client_id">700937184800-upv8u70pa3kfq125kkvu70rlop77krpg.apps.googleusercontent.com</string>
+    <string name="noFount">No hay conexión a internet.</string>
+    <string-array name="estados_medidor">
+        <item>Normal</item>
+        <item>Ilegible (No se puede leer)</item>
+        <item>Cortado (Sin servicio)</item>
+        <item>En Suspenso</item>
+        <item>Medidor Dañado</item>
+        <item>Casa Deshabitada</item>
+    </string-array>
+</resources>

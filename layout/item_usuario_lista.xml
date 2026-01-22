@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="6dp"
+    android:elevation="4dp"
+    app:cardCornerRadius="8dp"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/tv_nombre_completo"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="ARANCIBIA PEREZ, JUAN"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:textColor="#000000"/>
+
+        <TextView
+            android:id="@+id/tv_ci_usuario"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="CI: 1234567"
+            android:textColor="#757575"/>
+    </LinearLayout>
+</androidx.cardview.widget.CardView>
