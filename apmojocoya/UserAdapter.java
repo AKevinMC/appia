@@ -2,6 +2,7 @@ package com.example.apmojocoya;
 
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -32,7 +33,16 @@ public class UserAdapter extends RecyclerView.Adapter<UserAdapter.UserViewHolder
     @Override
     public void onBindViewHolder(@NonNull UserViewHolder holder, int position) {
         Usuario user = userList.get(position);
-        holder.userName.setText(user.getName());
+
+        // DIFERENCIAR INSTITUCIÓN
+        if ("Institucion".equals(user.getTipo())) {
+            holder.userName.setText(user.getName() + " (INST)");
+            holder.userName.setTextColor(Color.parseColor("#3F51B5")); // Azul Indigo
+        } else {
+            holder.userName.setText(user.getName());
+            holder.userName.setTextColor(Color.BLACK);
+        }
+
         holder.userMedidores.setText("Medidores: " + user.getMedidoresCount());
 
         holder.itemView.setOnClickListener(v -> {

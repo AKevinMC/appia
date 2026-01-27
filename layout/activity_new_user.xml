@@ -28,7 +28,7 @@
                 android:layout_marginBottom="10dp"
                 android:hint="Ingrese nombres"
                 android:padding="10dp" />
-<!--                android:background="@drawable/edit_text_background"-->
+
             <EditText
                 android:id="@+id/ETapellidos"
                 android:layout_width="match_parent"
@@ -36,7 +36,6 @@
                 android:layout_marginBottom="10dp"
                 android:hint="Ingrese apellidos"
                 android:padding="10dp" />
-            <!--                android:background="@drawable/edit_text_background"-->
 
             <EditText
                 android:id="@+id/ETci"
@@ -45,8 +44,6 @@
                 android:hint="Ingrese CI"
                 android:padding="10dp"
                 android:layout_marginBottom="10dp"/>
-<!--                android:background="@drawable/edit_text_background"-->
-
 
             <EditText
                 android:id="@+id/ETdireccion"
@@ -55,8 +52,6 @@
                 android:hint="Dirección"
                 android:padding="10dp"
                 android:layout_marginBottom="10dp"/>
-<!--                android:background="@drawable/edit_text_background"-->
-
 
             <EditText
                 android:id="@+id/ETcelular"
@@ -65,8 +60,35 @@
                 android:hint="Celular"
                 android:padding="10dp"
                 android:layout_marginBottom="10dp"/>
-<!--                android:background="@drawable/edit_text_background"-->
 
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Tipo de Socio:"
+                android:textStyle="bold"
+                android:layout_marginTop="10dp"/>
+
+            <RadioGroup
+                android:id="@+id/rg_tipo_socio"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="10dp">
+
+                <RadioButton
+                    android:id="@+id/rb_normal"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Normal (Casa)"
+                    android:checked="true"
+                    android:layout_marginEnd="20dp"/>
+
+                <RadioButton
+                    android:id="@+id/rb_institucion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Institución" />
+            </RadioGroup>
             <TextView
                 android:id="@+id/TVnro_medidores"
                 android:layout_width="wrap_content"
@@ -82,8 +104,6 @@
                 android:text="Add Medidor"
                 android:layout_marginBottom="10dp"
                 android:textColor="#FFFFFF"/>
-<!--                android:background="@drawable/button_background"-->
-
 
             <LinearLayout
                 android:layout_width="match_parent"
@@ -100,8 +120,6 @@
                     android:text="Cancelar"
                     android:textColor="#FFFFFF"
                     android:layout_marginEnd="5dp"/>
-<!--                    android:background="@drawable/button_background_cancel"-->
-
 
                 <Button
                     android:id="@+id/btnaceptar"
@@ -111,8 +129,6 @@
                     android:text="Aceptar"
                     android:textColor="#FFFFFF"
                     android:layout_marginStart="5dp"/>
-<!--                    android:background="@drawable/button_background_accept"-->
-
             </LinearLayout>
 
         </LinearLayout>

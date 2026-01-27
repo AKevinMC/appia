@@ -53,7 +53,6 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
         spinnerAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         holder.spinnerEstado.setAdapter(spinnerAdapter);
 
-        // Poner la selección correcta sin disparar eventos falsos
         holder.spinnerEstado.setOnItemSelectedListener(null);
         if (item.getEstado() != null) {
             int spinnerPos = spinnerAdapter.getPosition(item.getEstado());
@@ -65,25 +64,22 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
             holder.etActual.removeTextChangedListener(holder.textWatcher);
         }
 
-        // ¿Debe estar habilitado? Solo si es "Normal"
         boolean esEditable = "Normal".equals(item.getEstado());
         holder.etActual.setEnabled(esEditable);
 
         if (esEditable) {
-            holder.etActual.setBackgroundResource(android.R.drawable.edit_text); // Fondo normal
+            holder.etActual.setBackgroundResource(android.R.drawable.edit_text);
             if (item.isUpdated()) {
                 holder.etActual.setText(String.valueOf(item.getCurrentReading()));
             } else {
                 holder.etActual.setText("");
             }
         } else {
-            // Si está bloqueado (Cortado, etc), forzamos valor igual al anterior
-            holder.etActual.setBackgroundColor(Color.parseColor("#E0E0E0")); // Fondo Gris
+            holder.etActual.setBackgroundColor(Color.parseColor("#E0E0E0"));
             holder.etActual.setText(String.valueOf(item.getPreviousReading()));
-            item.setCurrentReading(item.getPreviousReading()); // Actualizamos el modelo
+            item.setCurrentReading(item.getPreviousReading());
         }
 
-        // Cambiar color del nombre si es estado crítico
         if (!esEditable) {
             holder.tvNombre.setTextColor(Color.RED);
             holder.tvNombre.setText(item.getUserName() + " (" + item.getEstado().toUpperCase() + ")");
@@ -94,7 +90,22 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
 
         actualizarCalculos(holder, item);
 
-        // 3. LISTENER DEL SPINNER (Cambio de Estado)
+        // --- MEJORA UX: LIMPIAR EL 0.0 AUTOMÁTICAMENTE ---
+        holder.etActual.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus && holder.etActual.isEnabled()) {
+                String texto = holder.etActual.getText().toString();
+                // Si es 0.0 o 0, lo borramos para escribir directo
+                if (texto.equals("0.0") || texto.equals("0")) {
+                    holder.etActual.setText("");
+                } else {
+                    // Si es otro número (ej: corrección), lo seleccionamos todo
+                    holder.etActual.selectAll();
+                }
+            }
+        });
+        // ------------------------------------------------
+
+        // 3. LISTENER DEL SPINNER
         holder.spinnerEstado.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
             @Override
             public void onItemSelected(AdapterView<?> parent, View view, int pos, long id) {
@@ -103,13 +114,10 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
                 if (!nuevoEstado.equals(item.getEstado())) {
                     item.setEstado(nuevoEstado);
 
-                    // Si cambia a algo que no es Normal, forzamos el valor y recargamos la vista
                     if (!"Normal".equals(nuevoEstado)) {
                         item.setCurrentReading(item.getPreviousReading());
-                        // Truco: Notificamos cambio solo en este item para refrescar el bloqueo visual
                         notifyItemChanged(holder.getAdapterPosition());
                     } else {
-                        // Si vuelve a Normal, desbloqueamos (notificando)
                         notifyItemChanged(holder.getAdapterPosition());
                     }
                 }
@@ -118,7 +126,7 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
             public void onNothingSelected(AdapterView<?> parent) {}
         });
 
-        // 4. LISTENER DEL TEXTO (Solo funciona si es editable)
+        // 4. LISTENER DEL TEXTO
         holder.textWatcher = new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -126,9 +134,9 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
             public void onTextChanged(CharSequence s, int start, int before, int count) {}
             @Override
             public void afterTextChanged(Editable s) {
-                if (holder.etActual.isEnabled()) { // Solo si está habilitado
+                if (holder.etActual.isEnabled()) {
                     if (s.toString().isEmpty()) {
-                        item.setCurrentReading(0); // O manejar como vacío
+                        item.setCurrentReading(0);
                     } else {
                         try {
                             double val = Double.parseDouble(s.toString());
@@ -145,19 +153,16 @@ public class ReadingAdapter extends RecyclerView.Adapter<ReadingAdapter.ViewHold
     }
 
     private void actualizarCalculos(ViewHolder holder, ReadingItem item) {
-        double consumo = item.getConsumo(); // Esto usa (Actual - Anterior)
-
-        // Si está bloqueado, el consumo será 0 automáticamente
+        double consumo = item.getConsumo();
         holder.tvConsumo.setText(String.format(Locale.getDefault(), "Consumo: %.0f m³", consumo));
 
-        // VALIDACIÓN VISUAL: Si es Normal y puso menos que el anterior -> ERROR
         if ("Normal".equals(item.getEstado()) && item.isUpdated() && item.getCurrentReading() < item.getPreviousReading()) {
             holder.etActual.setError("¡Imposible! Menor a anterior");
             holder.tvConsumo.setTextColor(Color.RED);
             if (holder.tvPrecio != null) holder.tvPrecio.setText("Error");
         } else {
             holder.etActual.setError(null);
-            holder.tvConsumo.setTextColor(Color.parseColor("#388E3C")); // Verde
+            holder.tvConsumo.setTextColor(Color.parseColor("#388E3C"));
 
             if (tarifaVigente != null) {
                 double aPagar = tarifaVigente.calcularMonto(consumo);

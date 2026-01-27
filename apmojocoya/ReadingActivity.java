@@ -5,7 +5,11 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.os.Bundle;
+import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,10 +29,13 @@ public class ReadingActivity extends AppCompatActivity {
 
     private RecyclerView recyclerView;
     private ReadingAdapter adapter;
-    private List<ReadingItem> readingList;
+    private List<ReadingItem> readingList; // Lista visible (Filtrada)
+    private List<ReadingItem> masterList;  // Lista maestra (Todos los datos)
+
     private FirebaseFirestore db;
     private Button btnGuardar;
     private TextView tvTitulo;
+    private Spinner spFiltro; // Nuevo Spinner
 
     private int anioSeleccionado;
     private int mesSeleccionado;
@@ -41,6 +48,7 @@ public class ReadingActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         readingList = new ArrayList<>();
+        masterList = new ArrayList<>(); // Inicializar maestra
 
         anioSeleccionado = getIntent().getIntExtra("YEAR", 2025);
         mesSeleccionado = getIntent().getIntExtra("MONTH", 1);
@@ -49,6 +57,8 @@ public class ReadingActivity extends AppCompatActivity {
         if (tvTitulo != null) {
             tvTitulo.setText("Lecturas: " + mesSeleccionado + "/" + anioSeleccionado);
         }
+
+        spFiltro = findViewById(R.id.sp_filtro_lectura); // Vincular Spinner
 
         recyclerView = findViewById(R.id.recycler_readings);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
@@ -59,7 +69,41 @@ public class ReadingActivity extends AppCompatActivity {
         btnGuardar = findViewById(R.id.btn_save_readings);
         btnGuardar.setOnClickListener(v -> guardarLecturas());
 
+        configurarFiltro(); // Configurar lógica del spinner
         cargarTarifaYDatos();
+    }
+
+    private void configuringFiltro() { // (Pequeño typo corregido: configurarFiltro)
+        // Lógica de configuración del filtro
+    }
+
+    private void configurarFiltro() {
+        String[] opciones = {"Todos", "Normal", "Institucion"};
+        ArrayAdapter<String> adapterFiltro = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, opciones);
+        spFiltro.setAdapter(adapterFiltro);
+
+        spFiltro.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                aplicarFiltro(opciones[position]);
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
+        });
+    }
+
+    private void aplicarFiltro(String criterio) {
+        readingList.clear(); // Limpiamos la vista actual
+
+        for (ReadingItem item : masterList) {
+            if (criterio.equals("Todos")) {
+                readingList.add(item);
+            } else if (item.getUserType().equals(criterio)) {
+                // Coincidencia exacta (Normal o Institucion)
+                readingList.add(item);
+            }
+        }
+        adapter.notifyDataSetChanged();
     }
 
     private void cargarTarifaYDatos() {
@@ -91,8 +135,8 @@ public class ReadingActivity extends AppCompatActivity {
 
             Map<String, DocumentSnapshot> mapActual = new HashMap<>();
             for (DocumentSnapshot d : snapActual) {
-                String k = d.getString("nro_medidor"); // Prioridad 1
-                if(k==null) k = d.getString("idMedidor"); // Prioridad 2
+                String k = d.getString("nro_medidor");
+                if(k==null) k = d.getString("idMedidor");
                 if(k!=null) mapActual.put(k, d);
             }
 
@@ -110,11 +154,19 @@ public class ReadingActivity extends AppCompatActivity {
         return mes == 1 ? new int[]{anio - 1, 12} : new int[]{anio, mes - 1};
     }
 
-    // --- AQUÍ ESTÁ LA CORRECCIÓN CLAVE ---
     private void procesarPadron(Map<String, DocumentSnapshot> mapActual, Map<String, DocumentSnapshot> mapAnterior) {
         db.collection("users").whereEqualTo("estado", "activo").get().addOnSuccessListener(userSnapshots -> {
-            readingList.clear();
+            masterList.clear(); // Limpiamos la MAESTRA, no la visible
+
             for (DocumentSnapshot userDoc : userSnapshots) {
+
+                // EXTRAER TIPO DE USUARIO
+                String tipoUsuario = userDoc.getString("tipo");
+                if (tipoUsuario == null) tipoUsuario = "Normal";
+
+                // Variable final para usar dentro del inner-loop
+                final String finalTipo = tipoUsuario;
+
                 userDoc.getReference().collection("medidores").whereEqualTo("estado", "activo").get().addOnSuccessListener(medidorSnapshots -> {
                     for (DocumentSnapshot medDoc : medidorSnapshots) {
                         String medId = medDoc.getId();
@@ -125,7 +177,6 @@ public class ReadingActivity extends AppCompatActivity {
                         String estado = "Normal";
                         boolean yaRegistrado = false;
 
-                        // 1. ¿YA GUARDAMOS ESTE MES? (Edición)
                         if (mapActual.containsKey(nro)) {
                             DocumentSnapshot d = mapActual.get(nro);
                             lecturaAnt = safeDouble(d.getDouble("lecturaAnterior"));
@@ -134,14 +185,10 @@ public class ReadingActivity extends AppCompatActivity {
                             if (estado == null) estado = "Normal";
                             yaRegistrado = true;
                         }
-                        // 2. ¿DATOS DEL MES ANTERIOR? (Arrastre)
                         else if (mapAnterior.containsKey(nro)) {
                             DocumentSnapshot d = mapAnterior.get(nro);
-                            // IMPORTANTE: Recuperamos la lectura final del mes pasado
                             lecturaAnt = safeDouble(d.getDouble("lecturaActual"));
 
-                            // Si por error se guardó un 0 el mes pasado en un medidor que NO es nuevo,
-                            // intentamos recuperar la lectura del medidor maestro para no arrastrar el error.
                             if (lecturaAnt == 0 && medDoc.getDouble("lectura_actual") != null) {
                                 double ficha = medDoc.getDouble("lectura_actual");
                                 if (ficha > 0) lecturaAnt = ficha;
@@ -150,32 +197,32 @@ public class ReadingActivity extends AppCompatActivity {
                             String estAnt = d.getString("estado");
                             if (estAnt != null && (estAnt.contains("Cortado") || estAnt.contains("Suspenso") || estAnt.contains("Dañado"))) {
                                 estado = estAnt;
-                                // CORRECCIÓN: Si sugerimos "Cortado", pre-llenamos la lectura actual
-                                // para que sea igual a la anterior desde el inicio.
                                 lecturaAct = lecturaAnt;
-                                yaRegistrado = true; // Fingimos que ya tiene datos para que el Adapter lo pinte bien
+                                yaRegistrado = true;
                             }
                         }
-                        // 3. NUEVO / HUECO
                         else {
                             Double ini = medDoc.getDouble("lectura_inicial");
                             Double ficha = medDoc.getDouble("lectura_actual");
-                            // Si hay un hueco, preferimos la última lectura conocida (ficha)
                             if (ficha != null && ficha > 0) lecturaAnt = ficha;
                             else lecturaAnt = (ini != null) ? ini : 0.0;
                         }
 
-                        ReadingItem item = new ReadingItem(userDoc.getId(), userDoc.getString("nombre"), medId, nro, lecturaAnt);
+                        // CREAR ITEM CON EL TIPO
+                        ReadingItem item = new ReadingItem(userDoc.getId(), userDoc.getString("nombre"), finalTipo, medId, nro, lecturaAnt);
                         item.setEstado(estado);
 
-                        // Si ya tenemos un dato (porque editamos O porque es Cortado automático), lo asignamos
                         if (yaRegistrado) {
                             item.setCurrentReading(lecturaAct);
                         }
 
-                        readingList.add(item);
+                        masterList.add(item); // Agregar a la maestra
                     }
-                    adapter.notifyDataSetChanged();
+
+                    // Al terminar de procesar un usuario (y sus medidores), refrescamos el filtro
+                    // Esto se ejecutará varias veces (asíncrono), pero asegura que la lista se vaya llenando
+                    String seleccionActual = spFiltro.getSelectedItem().toString();
+                    aplicarFiltro(seleccionActual);
                 });
             }
         });
@@ -187,34 +234,73 @@ public class ReadingActivity extends AppCompatActivity {
             return;
         }
 
-        // Validación de seguridad
-        for (ReadingItem item : readingList) {
+        // --- 1. NUEVA VALIDACIÓN DE OLVIDOS (Gente oculta por el filtro) ---
+        // Revisamos la lista MAESTRA para ver si alguien se quedó sin lectura
+        for (ReadingItem item : masterList) {
+            // Si el medidor está en estado "Normal" y NO se ha escrito nada (no actualizado)
+            if ("Normal".equals(item.getEstado()) && !item.isUpdated()) {
+
+                // A. Cambiar visualmente el filtro a "Todos" (Posición 0)
+                if (spFiltro.getSelectedItemPosition() != 0) {
+                    spFiltro.setSelection(0);
+                    aplicarFiltro("Todos"); // Forzamos la actualización de la lista visual
+                }
+
+                // B. Avisar al usuario quién falta
+                Toast.makeText(this, "⚠️ Falta la lectura de: " + item.getUserName(), Toast.LENGTH_LONG).show();
+
+                // C. Hacer Scroll hasta ese usuario para que se vea
+                int posicionVisual = readingList.indexOf(item);
+                if (posicionVisual != -1) {
+                    recyclerView.scrollToPosition(posicionVisual);
+                }
+
+                // D. IMPORTANTE: Cancelar el guardado.
+                // No guardamos hasta que el usuario decida qué hacer con ese vacío.
+                return;
+            }
+        }
+        // ------------------------------------------------------------------
+
+        // --- 2. VALIDACIÓN DE LECTURAS MENORES (Seguridad) ---
+        for (ReadingItem item : masterList) {
             if ("Normal".equals(item.getEstado()) && item.isUpdated()) {
                 if (item.getCurrentReading() < item.getPreviousReading()) {
+                    // Si encontramos un error, forzamos filtro "Todos" para mostrarlo
+                    if (spFiltro.getSelectedItemPosition() != 0) {
+                        spFiltro.setSelection(0);
+                        aplicarFiltro("Todos");
+                    }
+
                     Toast.makeText(this, "ERROR: Lectura menor a la anterior en medidor " + item.getMeterNumber(), Toast.LENGTH_LONG).show();
-                    recyclerView.scrollToPosition(readingList.indexOf(item));
+
+                    int pos = readingList.indexOf(item);
+                    if (pos != -1) recyclerView.scrollToPosition(pos);
+
                     return;
                 }
             }
         }
 
+        // --- 3. PROCESO DE GUARDADO (Igual que antes) ---
         int count = 0;
         WriteBatch batch = db.batch();
 
-        for (ReadingItem item : readingList) {
-            // Guardamos SI se actualizó O SI el estado NO es Normal (Cortado, Suspenso...)
+        for (ReadingItem item : masterList) {
+            // Guardamos SI se actualizó O SI el estado NO es Normal
             if (item.isUpdated() || !item.getEstado().equals("Normal")) {
 
                 String id = Lectura.generarIdUnico(item.getMeterNumber(), anioSeleccionado, mesSeleccionado);
 
-                // Lógica vital: Si no es Normal, la lectura final ES la anterior (Consumo 0)
                 double lecturaFinal = item.getCurrentReading();
+
+                // Si no es normal (cortado, etc), la lectura es la anterior
                 if (!"Normal".equals(item.getEstado())) {
                     lecturaFinal = item.getPreviousReading();
                 }
-                // Si es Normal pero no escribieron nada, evitamos guardar 0
+                // Si es normal pero está vacío, saltamos (aunque el bloque 1 ya debería haber evitado esto)
                 else if (lecturaFinal == 0 && !item.isUpdated()) {
-                    continue; // Saltamos este registro si está vacío y normal
+                    continue;
                 }
 
                 double consumo = lecturaFinal - item.getPreviousReading();
@@ -237,12 +323,13 @@ public class ReadingActivity extends AppCompatActivity {
         }
 
         if (count == 0) {
-            Toast.makeText(this, "No hay datos para guardar", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "No hay cambios nuevos para guardar", Toast.LENGTH_SHORT).show();
             return;
         }
 
+        final int cantidadFinal = count;
         batch.commit().addOnSuccessListener(v -> {
-            Toast.makeText(this, "¡Guardado Correctamente!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "¡Guardado Correctamente (" + cantidadFinal + " registros)!", Toast.LENGTH_SHORT).show();
             finish();
         });
     }

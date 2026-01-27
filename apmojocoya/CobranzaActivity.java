@@ -1,15 +1,18 @@
 package com.example.apmojocoya;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -26,36 +29,65 @@ import java.util.List;
 public class CobranzaActivity extends AppCompatActivity {
 
     private EditText etBuscar;
+    private Spinner spFiltro; // Nuevo Spinner
     private RecyclerView recyclerView;
     private FirebaseFirestore db;
     private UsuarioAdapter adapter;
-    private List<UsuarioItem> listaCompleta;
+
+    private List<UsuarioItem> listaCompleta; // Lista Maestra
+
+    // Variables para guardar el estado de los filtros
+    private String textoBusquedaActual = "";
+    private String tipoSeleccionadoActual = "Todos";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_cobranza); // Asegúrate que tu XML tenga estos IDs
+        setContentView(R.layout.activity_cobranza);
 
         db = FirebaseFirestore.getInstance();
         listaCompleta = new ArrayList<>();
 
-        etBuscar = findViewById(R.id.et_buscar_socio); // ID del EditText en tu XML
-        recyclerView = findViewById(R.id.recycler_usuarios_cobranza); // Cambia el ListView por RecyclerView en tu XML
+        etBuscar = findViewById(R.id.et_buscar_socio);
+        spFiltro = findViewById(R.id.sp_filtro_cobranza); // Vincular
+        recyclerView = findViewById(R.id.recycler_usuarios_cobranza);
 
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
+        configurarFiltroSpinner();
         cargarUsuarios();
 
-        // BUSCADOR DINÁMICO
+        // LISTENER DEL BUSCADOR
         etBuscar.addTextChangedListener(new TextWatcher() {
             @Override
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
-                filtrar(s.toString());
+                textoBusquedaActual = s.toString();
+                aplicarFiltrosCruzados(); // Llamamos al filtro maestro
             }
             @Override
             public void afterTextChanged(Editable s) {}
+        });
+    }
+
+    private void configuringFiltroSpinner() {
+        // Placeholder por si acaso, la lógica real está abajo
+    }
+
+    private void configurarFiltroSpinner() {
+        String[] opciones = {"Todos", "Normal", "Institucion"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, opciones);
+        spFiltro.setAdapter(adapter);
+
+        spFiltro.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                tipoSeleccionadoActual = opciones[position];
+                aplicarFiltrosCruzados(); // Llamamos al filtro maestro
+            }
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {}
         });
     }
 
@@ -65,29 +97,44 @@ public class CobranzaActivity extends AppCompatActivity {
             for (DocumentSnapshot doc : snaps) {
                 String nombre = doc.getString("nombre");
                 String apellidos = doc.getString("apellidos");
-                String ci = doc.getId(); // O doc.getString("ci") según tengas
+                String ci = doc.getId();
+
+                // LEER TIPO
+                String tipo = doc.getString("tipo");
+                if (tipo == null) tipo = "Normal";
 
                 if (nombre != null && apellidos != null) {
-                    listaCompleta.add(new UsuarioItem(ci, nombre, apellidos));
+                    listaCompleta.add(new UsuarioItem(ci, nombre, apellidos, tipo));
                 }
             }
 
             // ORDENAR ALFABÉTICAMENTE POR APELLIDO
             Collections.sort(listaCompleta, (u1, u2) -> u1.apellidos.compareToIgnoreCase(u2.apellidos));
 
-            // Inicializar adaptador con todos
-            adapter = new UsuarioAdapter(listaCompleta);
+            // Inicializar adaptador con la lista filtrada inicial (Todos + Vacío)
+            adapter = new UsuarioAdapter(new ArrayList<>(listaCompleta)); // Copia inicial
             recyclerView.setAdapter(adapter);
+
+            // Aplicar filtro inicial por si acaso
+            aplicarFiltrosCruzados();
         });
     }
 
-    private void filtrar(String texto) {
+    // --- LÓGICA DE FILTRO DOBLE (BUSCADOR + SPINNER) ---
+    private void aplicarFiltrosCruzados() {
         if (adapter == null) return;
         List<UsuarioItem> filtrada = new ArrayList<>();
 
         for (UsuarioItem user : listaCompleta) {
+            // 1. Verificar Tipo
+            boolean pasaTipo = tipoSeleccionadoActual.equals("Todos") || user.tipo.equals(tipoSeleccionadoActual);
+
+            // 2. Verificar Texto (Nombre o Apellido)
             String nombreCompleto = user.apellidos + " " + user.nombre;
-            if (nombreCompleto.toLowerCase().contains(texto.toLowerCase())) {
+            boolean pasaTexto = textoBusquedaActual.isEmpty() || nombreCompleto.toLowerCase().contains(textoBusquedaActual.toLowerCase());
+
+            // 3. Si cumple AMBOS, se agrega
+            if (pasaTipo && pasaTexto) {
                 filtrada.add(user);
             }
         }
@@ -117,15 +164,24 @@ public class CobranzaActivity extends AppCompatActivity {
         @Override
         public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
             UsuarioItem item = usuarios.get(position);
-            // Formato: ARANCIBIA PEREZ, JUAN
-            holder.tvNombre.setText(item.apellidos.toUpperCase() + " " + item.nombre.toUpperCase());
+
+            // MOSTRAR VISUALMENTE SI ES INSTITUCIÓN
+            if ("Institucion".equals(item.tipo)) {
+                holder.tvNombre.setText(item.apellidos.toUpperCase() + " " + item.nombre.toUpperCase() + " (INST)");
+                holder.tvNombre.setTextColor(Color.parseColor("#3F51B5")); // Azul
+            } else {
+                holder.tvNombre.setText(item.apellidos.toUpperCase() + " " + item.nombre.toUpperCase());
+                holder.tvNombre.setTextColor(Color.BLACK);
+            }
+
             holder.tvCi.setText("CI: " + item.id);
 
             holder.itemView.setOnClickListener(v -> {
-                // AL CLICAR, VAMOS A LA PANTALLA DE DETALLE DE DEUDA
                 Intent intent = new Intent(CobranzaActivity.this, DetalleCobroActivity.class);
                 intent.putExtra("USER_ID", item.id);
                 intent.putExtra("USER_NAME", item.nombre + " " + item.apellidos);
+                // Pasamos el tipo también, nos servirá para el botón PDF
+                intent.putExtra("USER_TYPE", item.tipo);
                 startActivity(intent);
             });
         }
@@ -143,11 +199,14 @@ public class CobranzaActivity extends AppCompatActivity {
         }
     }
 
-    // Modelo simple
+    // Modelo simple interno actualizado
     private static class UsuarioItem {
-        String id, nombre, apellidos;
-        public UsuarioItem(String id, String nombre, String apellidos) {
-            this.id = id; this.nombre = nombre; this.apellidos = apellidos;
+        String id, nombre, apellidos, tipo;
+        public UsuarioItem(String id, String nombre, String apellidos, String tipo) {
+            this.id = id;
+            this.nombre = nombre;
+            this.apellidos = apellidos;
+            this.tipo = tipo;
         }
     }
 }

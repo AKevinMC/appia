@@ -79,6 +79,15 @@
         android:backgroundTint="#388E3C"
         android:drawableLeft="@android:drawable/ic_menu_agenda"
         android:layout_marginTop="16dp" />
+    <Button
+        android:id="@+id/btn_carta_alcaldia"
+        android:layout_width="match_parent"
+        android:layout_height="60dp"
+        android:text="Carta Anual Alcaldía"
+        android:textSize="16sp"
+        android:backgroundTint="#827717"
+        android:drawableLeft="@android:drawable/ic_menu_send"
+        android:layout_marginTop="16dp" />
 
 
 </LinearLayout>

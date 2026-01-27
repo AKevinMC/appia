@@ -9,7 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestore;
 
 public class MainActivity extends AppCompatActivity {
 
-    private Button btnRegistrar, btnVerUsuarios, btnExportarPadron, btnTomarLecturas, btnConfigurarTarifa, btnGastos, btnCobranza;
+    private Button btnRegistrar, btnVerUsuarios, btnExportarPadron, btnTomarLecturas, btnConfigurarTarifa, btnGastos, btnCobranza, btnCartaAlcaldia;
     private FirebaseFirestore db;
 
     @Override
@@ -29,7 +29,10 @@ public class MainActivity extends AppCompatActivity {
         btnCobranza.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, CobranzaActivity.class)));
         btnGastos = findViewById(R.id.btn_gastos); // Crea este botón en tu XML
         btnGastos.setOnClickListener(v -> startActivity(new Intent(MainActivity.this, GastosActivity.class)));
-
+        btnCartaAlcaldia = findViewById(R.id.btn_carta_alcaldia);
+        btnCartaAlcaldia.setOnClickListener(v ->
+                startActivity(new Intent(MainActivity.this, InstitucionActivity.class))
+        );
         // 2. Configurar las acciones (Navegación)
 
         // Ir a Registrar Usuario

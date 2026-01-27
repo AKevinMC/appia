@@ -50,6 +50,7 @@
         <activity android:name=".CobranzaActivity" />
         <activity android:name=".DetalleCobroActivity" />
         <activity android:name=".ConfigTarifaActivity" />
+        <activity android:name=".InstitucionActivity" />
         <meta-data
             android:name="com.google.android.gms.signin.CLIENT_ID"
             android:value="@string/default_web_client_id" /> <!-- Firebase Auth -->
