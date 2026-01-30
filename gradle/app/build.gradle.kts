@@ -47,9 +47,11 @@ dependencies {
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
 
     //apache poi
-    implementation("org.apache.poi:poi:5.2.4")
-    implementation ("org.apache.poi:poi-ooxml:5.2.2")
-
+    implementation("org.apache.poi:poi:5.5.1")
+    implementation ("org.apache.poi:poi-ooxml:5.5.1")
+// 2. Librerías OBLIGATORIAS para POI 5 en Android
+    implementation("org.apache.logging.log4j:log4j-api:2.25.3") // Evita error de logs
+    implementation("com.fasterxml.woodstox:woodstox-core:7.1.1") // Evita error de XML (StAX)
     //firebase
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
