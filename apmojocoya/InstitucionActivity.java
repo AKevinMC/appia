@@ -12,18 +12,26 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.android.gms.auth.api.signin.GoogleSignIn;
+import com.google.android.gms.auth.api.signin.GoogleSignInAccount;
+import com.google.api.client.googleapis.extensions.android.gms.auth.GoogleAccountCredential;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
+import com.google.api.services.drive.Drive;
+import com.google.api.services.drive.DriveScopes;
 import com.google.firebase.Timestamp;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
 import com.google.firebase.firestore.SetOptions;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +45,8 @@ public class InstitucionActivity extends AppCompatActivity {
     private FirebaseFirestore db;
     private static final int PERMISSION_REQUEST_CODE = 100;
 
+    private DriveServiceHelper mDriveServiceHelper;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -44,20 +54,37 @@ public class InstitucionActivity extends AppCompatActivity {
 
         db = FirebaseFirestore.getInstance();
         spAnio = findViewById(R.id.sp_anio_institucion);
-
         etAlcalde = findViewById(R.id.et_alcalde_nombre);
         etPresiNombre = findViewById(R.id.et_presi_nombre);
         etPresiCI = findViewById(R.id.et_presi_ci);
         etTesoNombre = findViewById(R.id.et_tesorero_nombre);
         etTesoCI = findViewById(R.id.et_tesorero_ci);
-
         btnGenerar = findViewById(R.id.btn_generar_carta);
         tvStatus = findViewById(R.id.tv_status);
 
         configurarSpinner();
-        cargarDatosAutoridades(); // Cargar datos guardados previamente
+        cargarDatosAutoridades();
+        initializeDriveHelper();
 
         btnGenerar.setOnClickListener(v -> verificarPermisosYGenerar());
+    }
+
+    private void initializeDriveHelper() {
+        GoogleSignInAccount account = GoogleSignIn.getLastSignedInAccount(this);
+        if (account != null) {
+            GoogleAccountCredential credential = GoogleAccountCredential.usingOAuth2(
+                    this, Collections.singleton(DriveScopes.DRIVE_FILE));
+            credential.setSelectedAccount(account.getAccount());
+
+            Drive googleDriveService = new Drive.Builder(
+                    new NetHttpTransport(),
+                    new GsonFactory(),
+                    credential)
+                    .setApplicationName("APMojocoya")
+                    .build();
+
+            mDriveServiceHelper = new DriveServiceHelper(googleDriveService);
+        }
     }
 
     private void configurarSpinner() {
@@ -72,8 +99,7 @@ public class InstitucionActivity extends AppCompatActivity {
     }
 
     private void cargarDatosAutoridades() {
-        db.collection("configuracion").document("autoridades")
-                .get()
+        db.collection("configuracion").document("autoridades").get()
                 .addOnSuccessListener(document -> {
                     if (document.exists()) {
                         etAlcalde.setText(document.getString("alcalde_nombre"));
@@ -92,186 +118,100 @@ public class InstitucionActivity extends AppCompatActivity {
         data.put("presidente_ci", etPresiCI.getText().toString());
         data.put("tesorero_nombre", etTesoNombre.getText().toString());
         data.put("tesorero_ci", etTesoCI.getText().toString());
-
-        db.collection("configuracion").document("autoridades")
-                .set(data, SetOptions.merge());
+        db.collection("configuracion").document("autoridades").set(data, SetOptions.merge());
     }
 
     private void verificarPermisosYGenerar() {
-        // --- 1. VALIDACIÓN DE CAMPOS ---
-        if (etAlcalde.getText().toString().trim().isEmpty()) {
-            etAlcalde.setError("El nombre del Alcalde es obligatorio");
-            etAlcalde.requestFocus();
-            return;
-        }
-        if (etPresiNombre.getText().toString().trim().isEmpty()) {
-            etPresiNombre.setError("Nombre del Presidente/a requerido");
-            etPresiNombre.requestFocus();
-            return;
-        }
-        if (etPresiCI.getText().toString().trim().isEmpty()) {
-            etPresiCI.setError("C.I. del Presidente/a requerido");
-            etPresiCI.requestFocus();
-            return;
-        }
-        if (etTesoNombre.getText().toString().trim().isEmpty()) {
-            etTesoNombre.setError("Nombre del Tesorero/a requerido");
-            etTesoNombre.requestFocus();
-            return;
-        }
-        if (etTesoCI.getText().toString().trim().isEmpty()) {
-            etTesoCI.setError("C.I. del Tesorero/a requerido");
-            etTesoCI.requestFocus();
-            return;
-        }
+        if (etAlcalde.getText().toString().trim().isEmpty()) { etAlcalde.setError("Requerido"); return; }
 
-        // --- 2. SI TODO ESTÁ BIEN, PROCEDEMOS ---
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             procesarCobroAnual();
         } else {
-            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                    != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(this,
-                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
-                        PERMISSION_REQUEST_CODE);
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, PERMISSION_REQUEST_CODE);
             } else {
                 procesarCobroAnual();
-            }
-        }
-    }
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == PERMISSION_REQUEST_CODE) {
-            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-                procesarCobroAnual();
-            } else {
-                Toast.makeText(this, "Permiso denegado. No se puede guardar el Excel.", Toast.LENGTH_LONG).show();
             }
         }
     }
 
     private void procesarCobroAnual() {
-        // Guardamos los datos antes de generar para la próxima vez
         guardarDatosAutoridades();
-
         btnGenerar.setEnabled(false);
         tvStatus.setText("Obteniendo datos...");
         int anioSel = Integer.parseInt(spAnio.getSelectedItem().toString());
 
-        // Recolectar datos de los EditTexts
-        String alcalde = etAlcalde.getText().toString();
-        String presiN = etPresiNombre.getText().toString();
-        String presiCI = etPresiCI.getText().toString();
-        String tesoN = etTesoNombre.getText().toString();
-        String tesoCI = etTesoCI.getText().toString();
-
-        db.collection("users")
-                .whereEqualTo("tipo", "Institucion")
-                .get()
+        db.collection("users").whereEqualTo("tipo", "Institucion").get()
                 .addOnSuccessListener(userSnaps -> {
                     if (userSnaps.isEmpty()) {
-                        Toast.makeText(this, "No hay instituciones registradas", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(this, "No hay instituciones", Toast.LENGTH_SHORT).show();
                         btnGenerar.setEnabled(true);
                         return;
                     }
 
                     Map<String, InstitucionRow> mapaFilas = new HashMap<>();
-
                     for (DocumentSnapshot doc : userSnaps) {
                         String uid = doc.getId();
                         String nombre = doc.getString("apellidos");
-                        if (nombre == null || nombre.isEmpty()) {
-                            nombre = doc.getString("nombre");
-                        }
-                        if (nombre == null) nombre = "Institución S/N";
-
+                        if (nombre == null || nombre.isEmpty()) nombre = doc.getString("nombre");
                         mapaFilas.put(uid, new InstitucionRow(nombre));
                     }
 
-                    tvStatus.setText("Consultando lecturas...");
-
-                    db.collection("lecturas")
-                            .whereEqualTo("anio", anioSel)
-                            .get()
+                    db.collection("lecturas").whereEqualTo("anio", anioSel).get()
                             .addOnSuccessListener(lecturaSnaps -> {
-
                                 for (DocumentSnapshot doc : lecturaSnaps) {
                                     String uid = doc.getString("usuarioId");
                                     if (mapaFilas.containsKey(uid)) {
                                         Lectura lectura = doc.toObject(Lectura.class);
-                                        if (lectura != null) {
-                                            mapaFilas.get(uid).addLectura(lectura.getMes(), lectura);
-                                        }
+                                        if (lectura != null) mapaFilas.get(uid).addLectura(lectura.getMes(), lectura);
                                     }
                                 }
 
-                                List<InstitucionRow> listaFinal = new ArrayList<>(mapaFilas.values());
+                                String pathLocal = ExcelInstitucionGenerator.generarReporte(
+                                        this, anioSel, new ArrayList<>(mapaFilas.values()),
+                                        etAlcalde.getText().toString(), etPresiNombre.getText().toString(),
+                                        etPresiCI.getText().toString(), etTesoNombre.getText().toString(), etTesoCI.getText().toString()
+                                );
 
-                                if (listaFinal.isEmpty()) {
-                                    Toast.makeText(this, "No se encontraron datos", Toast.LENGTH_SHORT).show();
-                                    tvStatus.setText("Sin datos para generar.");
+                                if (pathLocal != null) {
+                                    subirADrive(pathLocal, anioSel);
                                 } else {
-                                    tvStatus.setText("Generando Excel...");
-
-                                    // Pasamos los nuevos datos al generador
-                                    String resultado = ExcelInstitucionGenerator.generarReporte(
-                                            this, anioSel, listaFinal,
-                                            alcalde, presiN, presiCI, tesoN, tesoCI
-                                    );
-
-                                    if (resultado != null) {
-                                        tvStatus.setText("¡Guardado en Documentos!");
-                                        Toast.makeText(this, "Guardado en: " + resultado, Toast.LENGTH_LONG).show();
-
-                                        // --- NUEVO: GUARDAR EN HISTORIAL DE FIREBASE ---
-                                        registrarHistorialEnFirebase(anioSel, resultado);
-                                        // ----------------------------------------------
-
-                                    } else {
-                                        tvStatus.setText("Error al guardar archivo");
-                                    }
+                                    tvStatus.setText("Error al crear archivo");
+                                    btnGenerar.setEnabled(true);
                                 }
-                                btnGenerar.setEnabled(true);
-
-                            })
-                            .addOnFailureListener(e -> {
-                                Toast.makeText(this, "Error lecturas: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-                                btnGenerar.setEnabled(true);
                             });
+                });
+    }
 
+    private void subirADrive(String path, int anio) {
+        if (mDriveServiceHelper == null) {
+            tvStatus.setText("Excel guardado localmente (Drive no configurado)");
+            btnGenerar.setEnabled(true);
+            return;
+        }
+
+        tvStatus.setText("Subiendo a Google Drive...");
+        File fileToUpload = new File(path);
+
+        mDriveServiceHelper.uploadFile(fileToUpload, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "AP_Mojocoya_Cartas")
+                .addOnSuccessListener(fileId -> {
+                    tvStatus.setText("¡Carta guardada en Documentos y Drive!");
+                    registrarHistorialEnFirebase(anio, path);
+                    btnGenerar.setEnabled(true);
+                    Toast.makeText(this, "Subida exitosa", Toast.LENGTH_SHORT).show();
                 })
                 .addOnFailureListener(e -> {
-                    Toast.makeText(this, "Error usuarios: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    tvStatus.setText("Error Drive: " + e.getMessage());
                     btnGenerar.setEnabled(true);
                 });
     }
 
-    // Método para guardar el rastro en Firebase (Historial)
     private void registrarHistorialEnFirebase(int anio, String rutaArchivo) {
         Map<String, Object> tramite = new HashMap<>();
         tramite.put("tipo_tramite", "Carta Cobro Institucional");
         tramite.put("gestion_cobrada", anio);
         tramite.put("fecha_creacion", Timestamp.now());
-
-        // Guardamos quiénes firmaron por si cambian en el futuro, saber quién hizo esta carta
-        Map<String, String> datosCarta = new HashMap<>();
-        datosCarta.put("destinatario_alcalde", etAlcalde.getText().toString());
-        datosCarta.put("presidente_firma", etPresiNombre.getText().toString());
-        datosCarta.put("tesorero_firma", etTesoNombre.getText().toString());
-        tramite.put("datos_carta", datosCarta);
-
         tramite.put("ruta_archivo_local", rutaArchivo);
-
-        // Guardamos en la colección "historial_tramites"
-        db.collection("historial_tramites")
-                .add(tramite)
-                .addOnSuccessListener(documentReference -> {
-                    Log.d("Historial", "Trámite registrado con ID: " + documentReference.getId());
-                })
-                .addOnFailureListener(e -> {
-                    Log.e("Historial", "Error al registrar historial", e);
-                });
+        db.collection("historial_tramites").add(tramite);
     }
 }

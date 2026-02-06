@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application")
     id("com.google.gms.google-services")
-    //doporta para que se pueda usar el plugin de kotlin
     id ("org.jetbrains.kotlin.android")
 }
 
@@ -32,11 +31,16 @@ android {
     kotlinOptions {
         jvmTarget = "17"
     }
-
+    packaging {
+        resources {
+            // Evita conflictos de archivos duplicados en las librerías de Google
+            excludes += "META-INF/DEPENDENCIES"
+            excludes += "META-INF/INDEX.LIST"
+        }
+    }
 }
 
 dependencies {
-
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.android.material:material:1.12.0")
     implementation("androidx.constraintlayout:constraintlayout:2.1.4")
@@ -46,16 +50,20 @@ dependencies {
     implementation ("com.google.android.gms:play-services-auth:21.1.1")
     implementation ("androidx.recyclerview:recyclerview:1.3.2")
 
-    //apache poi
+    // Apache POI para Excel
     implementation("org.apache.poi:poi:5.5.1")
     implementation ("org.apache.poi:poi-ooxml:5.5.1")
-// 2. Librerías OBLIGATORIAS para POI 5 en Android
-    implementation("org.apache.logging.log4j:log4j-api:2.25.3") // Evita error de logs
-    implementation("com.fasterxml.woodstox:woodstox-core:7.1.1") // Evita error de XML (StAX)
-    //firebase
+    implementation("org.apache.logging.log4j:log4j-api:2.25.3")
+    implementation("com.fasterxml.woodstox:woodstox-core:7.1.1")
+
+    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:33.0.0"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth:23.0.0")
-    //firesbase firestore
     implementation("com.google.firebase:firebase-firestore")
+
+    // Google Drive API y Transportes
+    implementation("com.google.api-client:google-api-client-android:2.2.0")
+    implementation("com.google.apis:google-api-services-drive:v3-rev20230822-2.0.0")
+    implementation("com.google.http-client:google-http-client-gson:1.43.3")
 }

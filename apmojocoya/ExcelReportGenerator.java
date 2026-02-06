@@ -144,7 +144,7 @@ public class ExcelReportGenerator {
         }
         return null;
     }
-    // --- NUEVO MÉTODO PARA BALANCE ---
+    // --- NUEVO METODO PARA BALANCE ---
     public static String generarBalance(Context context, int mes, int anio, double totalIngresosAgua, List<Movimiento> egresos) {
         Workbook workbook = new XSSFWorkbook();
         Sheet sheet = workbook.createSheet("Balance " + mes);
