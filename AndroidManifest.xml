@@ -4,7 +4,6 @@
 
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-
     <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
@@ -19,41 +18,47 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.APMojocoya"
         tools:targetApi="31">
+
         <activity
-            android:name=".UserDetailActivity"
-            android:exported="false" />
-        <activity
-            android:name=".DialogAddMedidor"
-            android:exported="false" />
-        <activity
-            android:name=".NewUserActivity"
-            android:exported="false" />
-        <activity
-            android:name=".UserActivity"
-            android:exported="false" />
-        <activity
-            android:name=".StartingScreenActivity"
+            android:name=".activities.StartingScreenActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".MainActivity" />
-        <activity android:name=".LoginActivity" />
-        <activity android:name=".ReadingActivity"/>
-        <activity android:name=".YearActivity" />
-        <activity android:name=".MonthActivity" />
-        <activity android:name=".ReportActivity" />
-        <activity android:name=".GastosActivity" />
-        <activity android:name=".CobranzaActivity" />
-        <activity android:name=".DetalleCobroActivity" />
-        <activity android:name=".ConfigTarifaActivity" />
-        <activity android:name=".InstitucionActivity" />
+
+        <activity
+            android:name=".activities.UserDetailActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.NewUserActivity"
+            android:exported="false" />
+
+        <activity
+            android:name=".activities.UserActivity"
+            android:exported="false" />
+
+        <activity android:name=".activities.MainActivity" />
+        <activity android:name=".activities.LoginActivity" />
+        <activity android:name=".activities.ReadingActivity"/>
+        <activity android:name=".activities.YearActivity" />
+        <activity android:name=".activities.MonthActivity" />
+        <activity android:name=".activities.ReportActivity" />
+        <activity android:name=".activities.GastosActivity" />
+        <activity android:name=".activities.CobranzaActivity" />
+        <activity android:name=".activities.DetalleCobroActivity" />
+        <activity android:name=".activities.ConfigTarifaActivity" />
+        <activity android:name=".activities.InstitucionActivity" />
+
+        <activity
+            android:name=".dialogs.DialogAddMedidor"
+            android:exported="false" />
+
         <meta-data
             android:name="com.google.android.gms.signin.CLIENT_ID"
-            android:value="@string/default_web_client_id" /> <!-- Firebase Auth -->
+            android:value="@string/default_web_client_id" />
         <meta-data
             android:name="com.google.firebase.firebase.AuthRegistrar"
             android:value="com.google.firebase.auth.FirebaseAuthRegistrar" />

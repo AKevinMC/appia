@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_reportes"
+            android:icon="@android:drawable/ic_menu_save"
+            android:title="Exportar Reportes Excel" />
+        <item
+            android:id="@+id/nav_carta_alcaldia"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="Carta Anual Alcaldía" />
+    </group>
+
+    <item android:title="@string/menu_config">
+        <menu>
+            <item
+                android:id="@+id/nav_tarifa"
+                android:icon="@android:drawable/ic_menu_manage"
+                android:title="Configurar Tarifa" />
+        </menu>
+    </item>
+</menu>
